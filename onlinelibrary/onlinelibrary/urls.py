@@ -1,8 +1,13 @@
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework.routers import SimpleRouter, DefaultRouter
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from books.views import BookView, BookDetailView, AuthorBookView, UserViewSet, ReviewView, ReviewDetailView
+from rest_framework.routers import SimpleRouter
+from rest_framework_simplejwt.views import TokenObtainPairView
+from books.views import (BookView, 
+                         BookDetailView, 
+                         AuthorBookView,
+                         UserViewSet, 
+                         ReviewView, 
+                         ReviewDetailView)
 
 router = SimpleRouter()
 router.register('authors', AuthorBookView)
@@ -16,7 +21,6 @@ urlpatterns = [
     path('books/<int:pk>/review/<int:id>/', ReviewDetailView.as_view()),
     path('register/', UserViewSet.as_view()),
     path('login/', TokenObtainPairView.as_view(), name='login'),
-    # path('login/refresh/', TokenRefreshView.as_view(), name='login_refresh'),
 ]
 
 urlpatterns += router.urls

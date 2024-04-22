@@ -1,8 +1,7 @@
-from rest_framework.viewsets import ModelViewSet, ViewSet, mixins
 from rest_framework.views import APIView
-from rest_framework import viewsets
+from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
-from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveAPIView, UpdateAPIView, CreateAPIView
+from rest_framework.generics import ListAPIView, ListCreateAPIView, CreateAPIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.contrib.auth.models import User
@@ -15,14 +14,14 @@ from .serializers import (BookSerializer,
                           BookDetailSerializer, 
                           BookUpdateSerializer, 
                           ReviewDetailSerializer, 
-                          ReviewSerializer, 
                           ReviewUpdateSerializer)
-
+# books/
 class BookView(ListCreateAPIView):
     
     queryset = Book.objects.all()
     serializer_class = BookSerializer
 
+# books/<int:pk>/
 class BookDetailView(APIView):
     
     http_method_names = ['get', 'put', 'delete']
@@ -38,7 +37,7 @@ class BookDetailView(APIView):
         return Response(serializer.data)
 
     
-    @action(methods=['put'], detail=True, permission_classes=[isOwner])
+    @action(methods=['put'], detail=True, permission_classes=[isOwner, IsAuthenticated, IsAdminUser])
     def put(self, request, pk):
         if not pk:
             return Response("Method PUT is not allowed")
@@ -53,7 +52,7 @@ class BookDetailView(APIView):
         serializer.save()
         return Response(serializer.data)
     
-    @action(methods=['delete'], detail=True)
+    @action(methods=['delete'], detail=True, permission_classes=[isOwner, IsAuthenticated, IsAdminUser])
     def delete(self, request, pk):
         if not pk:
             return Response("Method DELETE is not allowed")
@@ -65,25 +64,19 @@ class BookDetailView(APIView):
             return Response("Method DELETE is not allowed")
         
         return Response({"Book": f"Book {str(pk)} is deleted"})
+    
+# review/
+class ReviewView(ListAPIView):
+    
+    serializer_class = ReviewDetailSerializer
 
+    def get_queryset(self):
+        pk = self.kwargs['pk']
+        return Review.objects.filter(book__id = pk)
+
+# review/<int:id>/
 class ReviewDetailView(APIView):
 
-    # serializer_class = ReviewDetailSerializer
-    # # queryset = Review.objects.all()
-    # permission_classes = [isOwner]
-
-    # def get_queryset(self):
-    #     id = self.kwargs['id']
-    #     return Review.objects.filter(pk = id)
-
-    # def list(self, request, *args, **kwargs):
-    #     obj = Review.objects.get(pk = kwargs['id'])
-    #     self.check_object_permissions(request, obj)
-    #     return super().list(request, *args, **kwargs)
-    
-    # def update(self, request, *args, **kwargs):
-    #     print(self.get_object())
-    #     return super().update(request, *args, **kwargs)
     http_method_names = ['get', 'put', 'delete']
     @action(methods=['get'], detail=True)
     def get(self, request, pk, id):        
@@ -95,7 +88,7 @@ class ReviewDetailView(APIView):
     
         return Response(serializer.data)
     
-    @action(methods=['put'], detail=True, permission_classes=[isOwner])
+    @action(methods=['put'], detail=True, permission_classes=[isOwner, IsAuthenticated, IsAdminUser])
     def put(self, request, pk, id):
         if not id:
             return Response("Method PUT is not allowed")
@@ -110,17 +103,14 @@ class ReviewDetailView(APIView):
         serializer.save()
         return Response(serializer.data)
 
-class ReviewView(ListAPIView):
-    serializer_class = ReviewDetailSerializer
-
-    def get_queryset(self):
-        pk = self.kwargs['pk']
-        return Review.objects.filter(book__id = pk)
-
+# author/
 class AuthorBookView(ModelViewSet):
+    
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
-    
+
+# user/    
 class UserViewSet(CreateAPIView):
+    
     queryset = User.objects.all()
     serializer_class = UserSerializer
