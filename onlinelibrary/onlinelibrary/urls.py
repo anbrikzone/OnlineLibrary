@@ -1,13 +1,22 @@
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter, SimpleRouter
-from books.views import BookViewSet
+from rest_framework.routers import SimpleRouter, DefaultRouter
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from books.views import BookView, BookDetailView, AuthorBookView, UserViewSet, ReviewView, ReviewDetailView
 
 router = SimpleRouter()
-router.register('', BookViewSet)
+router.register('authors', AuthorBookView)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api-auth/', include('rest_framework.urls')),
-    path('books/', include(router.urls)),
+    path('auth/', include('rest_framework.urls')),
+    path('books/', BookView.as_view(), name='Books'),
+    path('books/<pk>/', BookDetailView.as_view(), name='books'),
+    path('books/<int:pk>/review/', ReviewView.as_view()),
+    path('books/<int:pk>/review/<int:id>/', ReviewDetailView.as_view()),
+    path('register/', UserViewSet.as_view()),
+    path('login/', TokenObtainPairView.as_view(), name='login'),
+    # path('login/refresh/', TokenRefreshView.as_view(), name='login_refresh'),
 ]
+
+urlpatterns += router.urls
