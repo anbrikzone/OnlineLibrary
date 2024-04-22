@@ -1,9 +1,10 @@
-from rest_framework import serializers
 from django.conf import settings
-from django.contrib.auth.models import User
-from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate
-from .models import Book, Author, Review
+from django.contrib.auth.hashers import make_password
+
+from rest_framework import serializers
+
+from .models import Book, Author, Review, User
 
 class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
