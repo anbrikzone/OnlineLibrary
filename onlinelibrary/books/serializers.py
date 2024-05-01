@@ -22,10 +22,6 @@ class ReviewSerializer(serializers.ModelSerializer):
         model = Review
         fields = ['user', 'rating', 'content']
 
-class ReviewUpdateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Review
-        fields = '__all__'
 
 class ReviewDetailSerializer(serializers.ModelSerializer):
     
@@ -50,21 +46,34 @@ class UserSerializer(serializers.ModelSerializer):
 
 class BookSerializer(serializers.ModelSerializer):
 
-    author = AuthorSerializer(many=False)
-
     class Meta:
         model = Book
         fields = '__all__'
 
-class BookUpdateSerializer(serializers.ModelSerializer):
+    def to_representation(self, instance):
+        representation = super(BookSerializer, self).to_representation(instance)
+        representation['author'] = instance.author.firstname + ' ' + instance.author.lastname
+        return representation
 
-    lastname = serializers.SlugRelatedField(queryset=Author.objects, slug_field='lastname', many=True)
-    
+class BookDetailSerializer(serializers.ModelSerializer):
+    author = AuthorSerializer()
+    reviews = ReviewSerializer(many=True, read_only=True)
+
+    def update(self, instance, validated_data):
+        author_data = validated_data.pop('author')
+        author_model = Author.objects.get(firstname = instance.author.firstname, lastname = instance.author.lastname)
+        author_model.firstname = author_data['firstname']
+        author_model.lastname = author_data['lastname']
+        author_model.save()
+        
+        instance.title = validated_data.get('title', instance.title)
+        instance.description = validated_data.get('description', instance.description)
+        instance.publish_date = validated_data.get('publish_date', instance.publish_date)
+        instance.save()
+
+        return instance
+
+
     class Meta:
         model = Book
-        fields = ['title', 'lastname', 'description', 'publish_date']
-
-class BookDetailSerializer(serializers.Serializer):
-    title = serializers.CharField()
-    author = AuthorSerializer()
-    reviews = ReviewSerializer(many=True)
+        fields = ('title', 'author', 'reviews', 'description', 'publish_date')

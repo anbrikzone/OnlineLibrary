@@ -1,115 +1,109 @@
-from rest_framework.views import APIView
+from django.core.exceptions import ObjectDoesNotExist
+from django.http import Http404
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
-from rest_framework.generics import ListAPIView, ListCreateAPIView, CreateAPIView
+from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
-from rest_framework.decorators import action
 
-from .permissions import isOwner
+from .permissions import isOwnerOrSuperUser
 from .models import Book, Author, Review, User
 from .serializers import (BookSerializer, 
                           UserSerializer, 
                           AuthorSerializer,  
                           BookDetailSerializer, 
-                          BookUpdateSerializer, 
-                          ReviewDetailSerializer, 
-                          ReviewUpdateSerializer)
+                          ReviewDetailSerializer)
 # books/
-class BookView(ListCreateAPIView):
+class BookView(ModelViewSet):
     
     queryset = Book.objects.all()
     serializer_class = BookSerializer
 
+    def get_permissions(self):
+        if self.action in ['create', ]:
+            self.permission_classes = [IsAdminUser]
+        else:
+            self.permission_classes = [IsAuthenticated]
+        return super(self.__class__, self).get_permissions()
+
 # books/<int:pk>/
-class BookDetailView(APIView):
-    
-    http_method_names = ['get', 'put', 'delete']
+class BookDetailView(ModelViewSet):
 
-    @action(methods=['get'], detail=True)
-    def get(self, request, pk):        
-        try:
-            book = Book.objects.get(pk=pk)
-            serializer = BookDetailSerializer(book)
-        except:
-            return Response("Method GET is not allowed")
+    serializer_class = BookDetailSerializer
+
+    def get_queryset(self):
+        return Book.objects.filter(id = self.kwargs['pk'])
     
+    def get_permissions(self):
+        if self.action in ['update', 'destroy']:
+            self.permission_classes = [IsAdminUser]
+        else:
+            self.permission_classes = [IsAuthenticated]
+        return super(self.__class__, self).get_permissions()
+
+    def update(self, request, *args, **kwargs):    
+        instance = self.get_object()
+        serializer = BookDetailSerializer(instance, data = request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
         return Response(serializer.data)
 
-    
-    @action(methods=['put'], detail=True, permission_classes=[isOwner, IsAuthenticated, IsAdminUser])
-    def put(self, request, pk):
-        if not pk:
-            return Response("Method PUT is not allowed")
-        
-        try:
-            book = Book.objects.get(pk=pk)
-        except:
-            return Response("Method PUT is not allowed")
-        
-        serializer = BookUpdateSerializer(book, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
-    
-    @action(methods=['delete'], detail=True, permission_classes=[isOwner, IsAuthenticated, IsAdminUser])
-    def delete(self, request, pk):
-        if not pk:
-            return Response("Method DELETE is not allowed")
-        
-        try:
-            instance = Book.objects.get(pk=pk)
-            instance.delete()
-        except:
-            return Response("Method DELETE is not allowed")
-        
-        return Response({"Book": f"Book {str(pk)} is deleted"})
     
 # review/
-class ReviewView(ListAPIView):
+class ReviewView(ModelViewSet):
     
     serializer_class = ReviewDetailSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         pk = self.kwargs['pk']
         return Review.objects.filter(book__id = pk)
 
 # review/<int:id>/
-class ReviewDetailView(APIView):
+class ReviewDetailView(ModelViewSet):
+    
+    serializer_class = ReviewDetailSerializer
 
-    http_method_names = ['get', 'put', 'delete']
-    @action(methods=['get'], detail=True)
-    def get(self, request, pk, id):        
-        try:
-            review = Review.objects.get(pk=id)
-            serializer = ReviewDetailSerializer(review)
-        except:
-            return Response("Method GET is not allowed")
+    def get_permissions(self):
+        if self.action in ['update', 'destroy']:
+            self.permission_classes = [isOwnerOrSuperUser]
+        else:
+            self.permission_classes = [IsAuthenticated]
+        return super(self.__class__, self).get_permissions()
+
+    def get_queryset(self):
+        return Review.objects.filter(pk = self.kwargs['id'])
     
-        return Response(serializer.data)
-    
-    @action(methods=['put'], detail=True, permission_classes=[isOwner, IsAuthenticated, IsAdminUser])
-    def put(self, request, pk, id):
-        if not id:
-            return Response("Method PUT is not allowed")
-        
+    def get_object(self):
         try:
-            review = Review.objects.get(pk=id)
-        except:
-            return Response("Method PUT is not allowed")
+            obj = Review.objects.get(pk = self.kwargs['id'])
+            self.check_object_permissions(self.request, obj)
+            return obj
+        except ObjectDoesNotExist:
+            raise Http404
         
-        serializer = ReviewUpdateSerializer(review, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = ReviewDetailSerializer(instance, data = request.data, partial = True)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+        return Response(instance)
 
 # author/
 class AuthorBookView(ModelViewSet):
     
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
+    permission_classes = [IsAdminUser]
 
 # user/    
 class UserViewSet(CreateAPIView):
     
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+    def get_permissions(self):
+        if self.action in ['created', 'update', 'destroy']:
+            self.permission_classes = [IsAdminUser]
+        else:
+            self.permission_classes = [IsAuthenticated]
+        return super(self.__class__, self).get_permissions()
