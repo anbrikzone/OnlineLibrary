@@ -9,7 +9,13 @@ from .models import Book, Author, Review, User
 class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Author
-        fields = ['firstname', 'lastname']
+        fields = '__all__'
+
+class AuthorBookSerializer(AuthorSerializer):
+    
+    class Meta:
+        model = Author
+        fields = ('firstname', 'lastname')
 
 class ReviewSerializer(serializers.ModelSerializer):
     
@@ -56,7 +62,7 @@ class BookSerializer(serializers.ModelSerializer):
         return representation
 
 class BookDetailSerializer(serializers.ModelSerializer):
-    author = AuthorSerializer()
+    author = AuthorBookSerializer()
     reviews = ReviewSerializer(many=True, read_only=True)
 
     def update(self, instance, validated_data):

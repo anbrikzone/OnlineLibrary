@@ -1,5 +1,7 @@
-from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
+from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.auth import get_user_model
+
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.generics import CreateAPIView
@@ -12,6 +14,9 @@ from .serializers import (BookSerializer,
                           AuthorSerializer,  
                           BookDetailSerializer, 
                           ReviewDetailSerializer)
+
+User = get_user_model()
+
 # books/
 class BookView(ModelViewSet):
     
