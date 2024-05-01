@@ -6,7 +6,6 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
-
 from .permissions import isOwnerOrSuperUser
 from .models import Book, Author, Review
 from .serializers import (BookSerializer, 
