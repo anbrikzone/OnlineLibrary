@@ -7,6 +7,7 @@ The **Online Library** is a web application built with the **Django REST Framewo
 ## Features
 
 - **User Authentication**: Secure user authentication using Simple JWT tokens.
+- **Permissions**: The API has object permissions between creators of reviews and ordinary users
 - **Book Catalog**: A comprehensive catalog of books available for users to browse.
 - **Reviews and Ratings**: Users can leave reviews and ratings for the books they've read.
 
